@@ -1,14 +1,52 @@
+function calcBoundary(row, column, rows, columns, boundary = 'wrap') {
+    let calculatedRow = row;
+    let calculatedColumn = column;
+    const mod = (a, b) => {
+        return ((a % b) + b) % b;
+    }
+    const mirror = (index, length) => {
+        const period = length * 2;
+        const remainder = mod(index, period);
+        return remainder < length ? remainder : period - remainder - 1;
+    }
+    switch (boundary) {
+        case 'wrap':
+            calculatedRow = mod(row, rows);
+            calculatedColumn = mod(column, columns);
+            break;
+        case 'mirror':
+            calculatedRow = mirror(row, rows);
+            calculatedColumn = mirror(column, columns);
+            break;
+        default:
+            break;
+    }
+    return {
+        row: calculatedRow,
+        column: calculatedColumn
+    };
+}
+
 class Matrix {
     constructor(rows, columns, filler = 0) {
         this.rows = rows;
         this.columns = columns;
-        this.matrix = new Array(rows).fill([]).map(() => new Array(columns).fill(filler));
+        this.filler = filler
+        this.matrix = new Array(this.rows).fill([]).map(() => new Array(this.columns).fill(this.filler));
     }
-    get(row, column) {
-        return this.matrix[row][column];
+    get(row, column, boundary = 'wrap') {
+        if (boundary === 'unset' && (row < 0 || column < 0 || row >= this.rows || column >= this.columns)) {
+            return this.filler;
+        }
+        const { row: calculatedRow, column: calculatedColumn } = calcBoundary(row, column, this.rows, this.columns, boundary);
+        return this.matrix[calculatedRow][calculatedColumn];
     }
-    set(row, column, value = 0) {
-        this.matrix[row][column] = value;
+    set(row, column, value = 0, boundary = 'wrap') {
+        if (boundary === 'unset' && (row < 0 || column < 0 || row >= this.rows || column >= this.columns)) {
+            return;
+        }
+        const { row: calculatedRow, column: calculatedColumn } = calcBoundary(row, column, this.rows, this.columns, boundary);
+        this.matrix[calculatedRow][calculatedColumn] = value;
     }
     forEach(callback) {
         for (let i = 0; i < this.rows; i++) {
@@ -45,7 +83,7 @@ class Matrix {
         }
         return true;
     }
-    clear(filler = 0) {
+    clear(filler = this.filler) {
         for (let i = 0; i < this.rows; i++) {
             for (let j = 0; j < this.columns; j++) {
                 this.matrix[i][j] = filler;

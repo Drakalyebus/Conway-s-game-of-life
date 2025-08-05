@@ -50,7 +50,7 @@ function build(formula, variables = {}) {
         phi: '(1 + Math.sqrt(5)) / 2',
         max: 'Math.max',
         min: 'Math.min',
-        mod: '(x, y) => x % y',
+        mod: '(x, y) => ((x % y) + y) % y',
         round: 'Math.round',
         sqrt: 'Math.sqrt',
         cbrt: 'Math.cbrt',

@@ -3,6 +3,7 @@ import compile from "./mathcompiler.js";
 
 const defRules = {
     "types": [0, 1],
+    "background": 0,
     "kernels": {
         "moore": [
             [1, 1, 1],
@@ -11,23 +12,27 @@ const defRules = {
         ]
     },
     "default": {
-        "kernel": "moore"
+        "kernel": "moore",
+        "boundary": "wrap"
     },
     "behavior": [
         {
             "priority": 0,
+            "order": 0,
             "from": [0],
             "condition": {
                 "value": [1],
                 "sign": "=",
                 "count": 3,
-                "kernel": "moore"
+                "kernel": "moore",
+                "boundary": "wrap"
             },
             "elseTo": 0,
             "to": 1
         },
         {
             "priority": 0,
+            "order": 0,
             "from": [1],
             "condition": {
                 "or": [
@@ -35,13 +40,15 @@ const defRules = {
                         "value": [1],
                         "sign": "<",
                         "count": 2,
-                        "kernel": "moore"
+                        "kernel": "moore",
+                        "boundary": "wrap"
                     },
                     {
                         "value": [1],
                         "sign": ">",
                         "count": 3,
-                        "kernel": "moore"
+                        "kernel": "moore",
+                        "boundary": "wrap"
                     }
                 ]
             },
@@ -58,13 +65,15 @@ class Life {
         this.rules = rules;
         this.rules.behavior.sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
         this.defined = [];
-        this.field = new Matrix(this.y, this.x);
+        const globalRandom = Math.random();
+        const background = compile(this.rules.background ?? 0, { globalRandom });
+        this.field = new Matrix(this.y, this.x, background);
     }
     countNeighbors(x, y, value = 0, kernel = [
         [1, 1, 1],
         [1, 0, 1],
         [1, 1, 1]
-    ], globalRandom = Math.random()) {
+    ], globalRandom = Math.random(), boundary = this.rules.default?.boundary ?? 'wrap') {
         let count = 0;
         const kw = Math.ceil((Math.max(...kernel.map(row => row.length)) + 1) / 2) * 2 - 1;
         const kh = Math.ceil((kernel.length + 1) / 2) * 2 - 1;
@@ -74,96 +83,108 @@ class Life {
         const ekh = (kh + 1) / 2;
         const paddedKernel = new Array(kh).fill([]).map((el, y) => new Array(kw).fill(0).map((el, x) => kernel[y]?.[x] ?? 0));
         for (let i = skw; i < ekw; i++) {
-            const nx = (x + i + this.x) % this.x;
+            const nx = x + i;
             for (let j = skh; j < ekh; j++) {
-                const ny = (y + j + this.y) % this.y;
+                const ny = y + j;
                 const calculated = compile(paddedKernel[j - skh][i - skw] ?? 0, { x: nx, y: ny, row: j - skh, column: i - skw, globalRandom });
-                if (this.field.get(ny, nx) === value) count += calculated;
+                if (this.field.get(ny, nx, boundary) === value) count += calculated;
             }
         }
         return count;
     }
     step() {
-        const globalRandom = Math.random();
-        const clone = this.field.clone();
         if (this.rules.behavior === undefined) return;
-        this.field.forEach((value, y, x) => {
-            for (const rule of this.rules.behavior) {
-                const checkTrue = (obj) => {
-                    if (obj.and !== undefined) {
-                        return obj.and.every(checkTrue);
-                    } else if (obj.or !== undefined) {
-                        return obj.or.some(checkTrue);
-                    } else if (obj.not !== undefined) {
-                        return !checkTrue(obj.not)
-                    } else if (obj.expression !== undefined) {
-                        const result = compile(obj.expression, { x, y, globalRandom });
-                        const requiredSign = obj.sign ?? "=";
-                        const requestedValue = compile(obj.value, { x, y, globalRandom });
-                        switch (requiredSign) {
-                            case "=":
-                                return result === requestedValue;
-                            case ">":
-                                return result > requestedValue;
-                            case "<":
-                                return result < requestedValue;
-                            case "!=":
-                                return result !== requestedValue;
-                            case ">=":
-                                return result >= requestedValue;
-                            case "<=":
-                                return result <= requestedValue;
-                            default:
-                                return result === requestedValue;
-                        }
-                    } else {
-                        return obj.value.some((formula) => {
-                            const value = compile(formula, { x, y, globalRandom });
-                            const selector = obj.kernel ?? this.rules.default?.kernel;
-                            const count = this.countNeighbors(x, y, value, this.rules.kernels === undefined ? [
-                                [1, 1, 1],
-                                [1, 0, 1],
-                                [1, 1, 1]
-                            ] : ((typeof selector !== "string") ? [
-                                [1, 1, 1],
-                                [1, 0, 1],
-                                [1, 1, 1]
-                            ] : this.rules.kernels[selector]));
-                            const requiredCount = compile(obj.count, { x, y, globalRandom });
-                            switch (obj.sign ?? "=") {
+        const globalRandom = Math.random();
+        const orders = [];
+        this.rules.behavior.forEach(rule => {
+            const calculatedOrder = compile(rule.order ?? 0, { globalRandom });
+            if (!orders.includes(calculatedOrder)) orders.push(calculatedOrder);
+        });
+        orders.sort((a, b) => b - a);
+        orders.forEach((order) => {
+            const rules = this.rules.behavior.filter(rule => {
+                const calculatedOrder = compile(rule.order ?? 0, { globalRandom });
+                return calculatedOrder === order;
+            });
+            const clone = this.field.clone();
+            this.field.forEach((value, y, x) => {
+                for (const rule of rules) {
+                    const checkTrue = (obj) => {
+                        if (obj.and !== undefined) {
+                            return obj.and.every(checkTrue);
+                        } else if (obj.or !== undefined) {
+                            return obj.or.some(checkTrue);
+                        } else if (obj.not !== undefined) {
+                            return !checkTrue(obj.not)
+                        } else if (obj.expression !== undefined) {
+                            const result = compile(obj.expression, { x, y, globalRandom });
+                            const requiredSign = obj.sign ?? "=";
+                            const requestedValue = compile(obj.value, { x, y, globalRandom });
+                            switch (requiredSign) {
                                 case "=":
-                                    return count === requiredCount;
+                                    return result === requestedValue;
                                 case ">":
-                                    return count > requiredCount;
+                                    return result > requestedValue;
                                 case "<":
-                                    return count < requiredCount;
+                                    return result < requestedValue;
                                 case "!=":
-                                    return count !== requiredCount;
+                                    return result !== requestedValue;
                                 case ">=":
-                                    return count >= requiredCount;
+                                    return result >= requestedValue;
                                 case "<=":
-                                    return count <= requiredCount;
+                                    return result <= requestedValue;
                                 default:
-                                    return count === requiredCount;
+                                    return result === requestedValue;
                             }
-                        });
+                        } else {
+                            return obj.value.some((formula) => {
+                                const value = compile(formula, { x, y, globalRandom });
+                                const selector = obj.kernel ?? this.rules.default?.kernel;
+                                const count = this.countNeighbors(x, y, value, this.rules.kernels === undefined ? [
+                                    [1, 1, 1],
+                                    [1, 0, 1],
+                                    [1, 1, 1]
+                                ] : ((typeof selector !== "string") ? [
+                                    [1, 1, 1],
+                                    [1, 0, 1],
+                                    [1, 1, 1]
+                                ] : this.rules.kernels[selector]), globalRandom, (obj.boundary ?? this.rules.default?.boundary) ?? 'wrap');
+                                const requiredCount = compile(obj.count, { x, y, globalRandom });
+                                switch (obj.sign ?? "=") {
+                                    case "=":
+                                        return count === requiredCount;
+                                    case ">":
+                                        return count > requiredCount;
+                                    case "<":
+                                        return count < requiredCount;
+                                    case "!=":
+                                        return count !== requiredCount;
+                                    case ">=":
+                                        return count >= requiredCount;
+                                    case "<=":
+                                        return count <= requiredCount;
+                                    default:
+                                        return count === requiredCount;
+                                }
+                            });
+                        }
+                    }
+                    const unset = rule.condition === undefined;
+                    let check = true;
+                    if (!unset) {
+                        check = checkTrue(rule.condition);
+                    }
+                    if (check && rule.from.some(type => compile(type, { x, y, globalRandom }) === value)) {
+                        clone.set(y, x, rule.to);
+                        break;
+                    } else if (!check && rule.from.some(type => compile(type, { x, y, globalRandom }) === value)) {
+                        clone.set(y, x, rule.elseTo ?? value);
+                        break;
                     }
                 }
-                const unset = rule.condition === undefined;
-                let check = true;
-                if (!unset) {
-                    check = checkTrue(rule.condition);
-                }
-                if (check && rule.from.some(type => compile(type, { x, y, globalRandom }) === value)) {
-                    clone.set(y, x, rule.to);
-                    break;
-                } else if (!check && rule.from.some(type => compile(type, { x, y, globalRandom }) === value)) {
-                    clone.set(y, x, rule.elseTo ?? value);
-                    break;
-                }
-            }
+            });
+            this.field = clone;
         });
-        this.field = clone;
     }
     steps(steps = 1) {
         for (let i = 0; i < steps; i++) this.step();
@@ -184,7 +205,15 @@ class Life {
     }
     types() {
         const globalRandom = Math.random();
-        const types = [...(this.rules.types ?? []).map((type) => compile(type, { globalRandom })), ...this.defined];
+        const types = [...(this.rules.types ?? []).map((type) => compile(type, { globalRandom }))];
+        this.defined.forEach(type => {
+            if (!types.includes(type)) {
+                types.push(type);
+            }
+        });
+        if (!types.includes(this.rules.background ?? 0)) {
+            types.push(this.rules.background ?? 0);
+        }
         if (this.rules.behavior === undefined) return types;
         this.rules.behavior.forEach(rule => {
             rule.from.forEach(type => {
