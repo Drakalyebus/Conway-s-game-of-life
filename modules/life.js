@@ -123,7 +123,7 @@ class Life {
                     }
                 }
                 const unset = rule.condition === undefined;
-                let check = false;
+                let check = true;
                 if (!unset) {
                     check = checkTrue(rule.condition);
                 }
