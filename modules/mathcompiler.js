@@ -15,6 +15,7 @@ function build(formula, variables = {}) {
         ln: 'Math.log',
         log: '(x, y = 10) => Math.log(x) / Math.log(y)',
         sin: 'Math.sin',
+        sinc: '(x) => x === 0 ? 1 : Math.sin(x) / x',
         cos: 'Math.cos',
         tan: 'Math.tan',
         asin: 'Math.asin',
@@ -161,7 +162,6 @@ function compile(formula, variables = {}) {
         result = +result;
     }
     return result;
-
 }
 
 export default compile;
