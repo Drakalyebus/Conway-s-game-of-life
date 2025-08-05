@@ -20,6 +20,7 @@ function build(formula, variables = {}) {
         asin: 'Math.asin',
         acos: 'Math.acos',
         atan: 'Math.atan',
+        angle: '(x, y) => Math.atan2(y, x)',
         csc: '(x) => 1 / Math.sin(x)',
         sec: '(x) => 1 / Math.cos(x)',
         cot: '(x) => 1 / Math.tan(x)',
@@ -52,9 +53,24 @@ function build(formula, variables = {}) {
         round: 'Math.round',
         sqrt: 'Math.sqrt',
         cbrt: 'Math.cbrt',
+        gcd: `(x, y) => {
+            let n = 1;
+            while ((n * x) % y !== 0 && n < y) n++;
+            return n * x;
+        }`,
+        lcm: `(x, y) => {
+            let n = 1;
+            while ((n * y) % x !== 0 && n < x) n++;
+            const gcd = n * y;
+            return x * y / gcd;
+        }`,
+        clamp: '(x, min, max) => Math.min(Math.max(x, min), max)',
+        root: '(x, y) => Math.pow(x, 1 / y)',
         sign: 'Math.sign',
         exp: 'Math.exp',
         pow: 'Math.pow',
+        rad: '(x) => x * Math.PI / 180',
+        deg: '(x) => x * 180 / Math.PI',
         sigmoid: '(x) => 1 / (1 + Math.exp(-x))',
         logit: '(x) => Math.log(x / (1 - x))',
         factorial: `(x) => {
@@ -145,6 +161,7 @@ function compile(formula, variables = {}) {
         result = +result;
     }
     return result;
+
 }
 
 export default compile;
