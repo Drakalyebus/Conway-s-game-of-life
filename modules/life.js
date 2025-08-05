@@ -16,35 +16,33 @@ const defRules = {
     "behavior": [
         {
             "from": [0],
-            "neighborsAnd": [
-                {
-                    "value": [1],
-                    "sign": "=",
-                    "count": 3,
-                    "kernel": "moore"
-                }
-            ],
-            "boolean": "and",
+            "condition": {
+                "value": [1],
+                "sign": "=",
+                "count": 3,
+                "kernel": "moore"
+            },
             "elseTo": 0,
             "to": 1
         },
         {
             "from": [1],
-            "neighborsOr": [
-                {
-                    "value": [1],
-                    "sign": ">",
-                    "count": 3,
-                    "kernel": "moore"
-                },
-                {
-                    "value": [1],
-                    "sign": "<",
-                    "count": 2,
-                    "kernel": "moore"
-                }
-            ],
-            "boolean": "and",
+            "condition": {
+                "or": [
+                    {
+                        "value": [1],
+                        "sign": "<",
+                        "count": 2,
+                        "kernel": "moore"
+                    },
+                    {
+                        "value": [1],
+                        "sign": ">",
+                        "count": 3,
+                        "kernel": "moore"
+                    }
+                ]
+            },
             "elseTo": 1,
             "to": 0
         }
@@ -86,43 +84,49 @@ class Life {
         if (this.rules.behavior === undefined) return;
         this.field.forEach((value, y, x) => {
             for (const rule of this.rules.behavior) {
-                const checker = (neighbor) => {
-                    return neighbor.value.some((formula) => {
-                        const value = compile(formula, { x, y });
-                        const selector = neighbor.kernel ?? this.rules.default?.kernel;
-                        const count = this.countNeighbors(x, y, value, this.rules.kernels === undefined ? [
-                            [1, 1, 1],
-                            [1, 0, 1],
-                            [1, 1, 1]
-                        ] : ((typeof selector !== "string") ? [
-                            [1, 1, 1],
-                            [1, 0, 1],
-                            [1, 1, 1]
-                        ] : this.rules.kernels[selector]));
-                        const requiredCount = compile(neighbor.count, { x, y });
-                        switch (neighbor.sign ?? "=") {
-                            case "=":
-                                return count === requiredCount;
-                            case ">":
-                                return count > requiredCount;
-                            case "<":
-                                return count < requiredCount;
-                            case "!=":
-                                return count !== requiredCount;
-                            case ">=":
-                                return count >= requiredCount;
-                            case "<=":
-                                return count <= requiredCount;
-                            default:
-                                return count === requiredCount;
-                        }
-                    });
-                };
-                const boolean = rule.boolean ?? "or";
-                const checkAnd = rule.neighborsAnd?.every(checker) ?? (boolean === "and");
-                const checkOr = rule.neighborsOr?.some(checker) ?? (boolean === "and");
-                const unset = rule.neighborsAnd === undefined && rule.neighborsOr === undefined;
-                const check = unset || (boolean === "and" ? checkAnd && checkOr : (boolean === "or" ? checkAnd || checkOr : false));
+                const checkTrue = (obj) => {
+                    if (obj.and !== undefined) {
+                        return obj.and.every(checkTrue);
+                    } else if (obj.or !== undefined) {
+                        return obj.or.some(checkTrue);
+                    } else {
+                        return obj.value.some((formula) => {
+                            const value = compile(formula, { x, y });
+                            const selector = obj.kernel ?? this.rules.default?.kernel;
+                            const count = this.countNeighbors(x, y, value, this.rules.kernels === undefined ? [
+                                [1, 1, 1],
+                                [1, 0, 1],
+                                [1, 1, 1]
+                            ] : ((typeof selector !== "string") ? [
+                                [1, 1, 1],
+                                [1, 0, 1],
+                                [1, 1, 1]
+                            ] : this.rules.kernels[selector]));
+                            const requiredCount = compile(obj.count, { x, y });
+                            switch (obj.sign ?? "=") {
+                                case "=":
+                                    return count === requiredCount;
+                                case ">":
+                                    return count > requiredCount;
+                                case "<":
+                                    return count < requiredCount;
+                                case "!=":
+                                    return count !== requiredCount;
+                                case ">=":
+                                    return count >= requiredCount;
+                                case "<=":
+                                    return count <= requiredCount;
+                                default:
+                                    return count === requiredCount;
+                            }
+                        });
+                    }
+                }
+                const unset = rule.condition === undefined;
+                let check = false;
+                if (!unset) {
+                    check = checkTrue(rule.condition);
+                }
                 if (check && rule.from.some(type => compile(type, { x, y }) === value)) {
                     clone.set(y, x, rule.to);
                     break;
@@ -163,18 +167,21 @@ class Life {
             if (!types.includes(calculatedTo)) types.push(calculatedTo);
             const calculatedElseTo = compile(rule.elseTo ?? rule.from[0], { x: 0, y: 0 });
             if (calculatedElseTo !== undefined && !types.includes(calculatedElseTo)) types.push(calculatedElseTo);
-            rule.neighborsAnd?.forEach(neighbor => {
-                neighbor.value.forEach(type => {
-                    const calculated = compile(type, { x: 0, y: 0 });
-                    if (!types.includes(calculated)) types.push(calculated);
-                });
-            });
-            rule.neighborsOr?.forEach(neighbor => {
-                neighbor.value.forEach(type => {
-                    const calculated = compile(type, { x: 0, y: 0 });
-                    if (!types.includes(calculated)) types.push(calculated);
-                });
-            });
+            const check = (obj) => {
+                if (obj.and !== undefined) {
+                    obj.and.forEach(check);
+                } else if (obj.or !== undefined) {
+                    obj.or.forEach(check);
+                } else {
+                    obj.value.forEach(type => {
+                        const calculated = compile(type, { x: 0, y: 0 });
+                        if (!types.includes(calculated)) types.push(calculated);
+                    });
+                }
+            }
+            if (rule.condition !== undefined) {
+                check(rule.condition);
+            }
         });
         this.field.forEach((value, y, x) => {
             const calculated = compile(value, { x, y });

@@ -13,35 +13,33 @@ export const rules = {
     "behavior": [
         {
             "from": [0],
-            "neighborsAnd": [
-                {
-                    "value": [1],
-                    "sign": "=",
-                    "count": 3,
-                    "kernel": "moore"
-                }
-            ],
-            "boolean": "and",
+            "condition": {
+                "value": [1],
+                "sign": "=",
+                "count": 3,
+                "kernel": "moore"
+            },
             "elseTo": 0,
             "to": 1
         },
         {
             "from": [1],
-            "neighborsOr": [
-                {
-                    "value": [1],
-                    "sign": ">",
-                    "count": 3,
-                    "kernel": "moore"
-                },
-                {
-                    "value": [1],
-                    "sign": "<",
-                    "count": 2,
-                    "kernel": "moore"
-                }
-            ],
-            "boolean": "and",
+            "condition": {
+                "or": [
+                    {
+                        "value": [1],
+                        "sign": "<",
+                        "count": 2,
+                        "kernel": "moore"
+                    },
+                    {
+                        "value": [1],
+                        "sign": ">",
+                        "count": 3,
+                        "kernel": "moore"
+                    }
+                ]
+            },
             "elseTo": 1,
             "to": 0
         }
