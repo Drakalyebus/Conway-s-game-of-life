@@ -1,3 +1,5 @@
+# OUTDATED!
+
 # Cellular Automata Rules: Complete Documentation
 
 ## 1. Introduction
