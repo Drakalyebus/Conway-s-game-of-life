@@ -49,7 +49,8 @@ function gridClickPosition(e) {
 
 function lifeRender() {
     life.field.forEach((value, y, x) => {
-        ctx.fillStyle = `hsl(${types.indexOf(value) / types.length * 360}, 100%, 50%)`;
+        // ctx.fillStyle = `hsl(${types.indexOf(value) / types.length * 360}, 100%, 50%)`;
+        ctx.fillStyle = `hsl(0, 0%, ${(types.length - 1 - types.indexOf(value)) / (types.length - 1) * 100}%)`;
         ctx.fillRect(x * cellSize + 1, y * cellSize + 1, cellSize - 2, cellSize - 2);
     });
 }

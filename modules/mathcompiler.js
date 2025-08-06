@@ -143,7 +143,7 @@ function build(formula, variables = {}) {
             tokens[i] = `(${functions[token]})`;
         }
     }
-    const code = tokens.join('');
+    const code = tokens.join(' ');
     return code;
 }
 
