@@ -250,6 +250,7 @@ class Life {
             const calculated = compile(value, { x, y, globalRandom });
             if (!types.includes(calculated)) types.push(calculated);
         });
+        types.sort((a, b) => a - b);
         this.defined = types;
         return types;
     }
