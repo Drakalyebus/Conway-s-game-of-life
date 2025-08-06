@@ -123,7 +123,7 @@ class Life {
                         } else if (obj.expression !== undefined) {
                             const result = compile(obj.expression, { x, y, globalRandom });
                             const requiredSign = obj.sign ?? "=";
-                            const requestedValue = compile(obj.value, { x, y, globalRandom });
+                            const requestedValue = compile(obj.value ?? 1, { x, y, globalRandom });
                             switch (requiredSign) {
                                 case "=":
                                     return result === requestedValue;
