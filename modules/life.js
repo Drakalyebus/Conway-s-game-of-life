@@ -18,7 +18,7 @@ const defRules = {
     "behavior": [
         {
             "priority": 0,
-            "order": 0,
+            "order": [0],
             "from": [0],
             "condition": {
                 "value": [1],
@@ -32,7 +32,7 @@ const defRules = {
         },
         {
             "priority": 0,
-            "order": 0,
+            "order": [0],
             "from": [1],
             "condition": {
                 "or": [
@@ -97,14 +97,18 @@ class Life {
         const globalRandom = Math.random();
         const orders = [];
         this.rules.behavior.forEach(rule => {
-            const calculatedOrder = compile(rule.order ?? 0, { globalRandom });
-            if (!orders.includes(calculatedOrder)) orders.push(calculatedOrder);
+            (rule.order ?? [0])?.forEach(order => {
+                const calculatedOrder = compile(order, { globalRandom });
+                if (!orders.includes(calculatedOrder)) orders.push(calculatedOrder);
+            });
         });
-        orders.sort((a, b) => b - a);
+        orders.sort((a, b) => a - b);
         orders.forEach((order) => {
             const rules = this.rules.behavior.filter(rule => {
-                const calculatedOrder = compile(rule.order ?? 0, { globalRandom });
-                return calculatedOrder === order;
+                return (rule.order ?? [0])?.some(orderInRule => {
+                    const calculatedOrder = compile(orderInRule, { globalRandom });
+                    return calculatedOrder === order;
+                });
             });
             const clone = this.field.clone();
             this.field.forEach((value, y, x) => {
