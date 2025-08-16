@@ -23,9 +23,13 @@ start.addEventListener("click", () => started = true);
 stop.addEventListener("click", () => started = false);
 const types = life.types();
 let selectedType = 0;
-canvas.addEventListener('contextmenu', (e) => {
+window.addEventListener('keydown', (e) => {
     e.preventDefault();
-    selectedType = (selectedType + 1) % types.length;
+    if (e.code === "KeyW") {
+        selectedType = (selectedType + 1) % types.length;
+    } else if (e.code === "KeyS") {
+        selectedType = (selectedType + types.length - 1) % types.length;
+    }
 });
 random.addEventListener("click", () => {
     life.randomize(types);
@@ -75,7 +79,7 @@ const draw = () => {
             life.field.set(gridClickPosition(e).y, gridClickPosition(e).x, types[selectedType]);
         }
     }
-    setTimeout(draw, 1);
+    setTimeout(draw, 100);
 }
 
 renderGrid(gridWidth, gridHeight, cellSize, cellSize);

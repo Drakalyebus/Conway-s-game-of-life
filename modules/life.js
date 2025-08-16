@@ -181,12 +181,10 @@ class Life {
                     }
                     if (check && rule.from.some(type => compile(type, { x, y, globalRandom, ...(this.rules.variables ?? {}) }) === value)) {
                         clone.set(y, x, rule.to);
-                        break;
                     } else if (!check && rule.from.some(type => compile(type, { x, y, globalRandom, ...(this.rules.variables ?? {}) }) === value)) {
                         if (rule.elseTo !== undefined) {
                             clone.set(y, x, rule.elseTo);
                         }
-                        break;
                     }
                 }
             });
