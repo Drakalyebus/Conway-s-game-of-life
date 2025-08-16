@@ -182,7 +182,9 @@ class Life {
                         clone.set(y, x, rule.to);
                         break;
                     } else if (!check && rule.from.some(type => compile(type, { x, y, globalRandom }) === value)) {
-                        clone.set(y, x, rule.elseTo ?? value);
+                        if (rule.elseTo !== undefined) {
+                            clone.set(y, x, rule.elseTo);
+                        }
                         break;
                     }
                 }
