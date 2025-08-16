@@ -23,7 +23,7 @@ const defRules = {
             "condition": {
                 "value": [1],
                 "sign": "=",
-                "count": 3,
+                "count": [3],
                 "kernel": "moore",
                 "boundary": "wrap"
             },
@@ -39,14 +39,14 @@ const defRules = {
                     {
                         "value": [1],
                         "sign": "<",
-                        "count": 2,
+                        "count": [2],
                         "kernel": "moore",
                         "boundary": "wrap"
                     },
                     {
                         "value": [1],
                         "sign": ">",
-                        "count": 3,
+                        "count": [3],
                         "kernel": "moore",
                         "boundary": "wrap"
                     }
@@ -123,22 +123,22 @@ class Life {
                         } else if (obj.expression !== undefined) {
                             const result = compile(obj.expression, { x, y, globalRandom });
                             const requiredSign = obj.sign ?? "=";
-                            const requestedValue = compile(obj.value ?? 1, { x, y, globalRandom });
+                            const requiredValue = (obj.value ?? [1]).map(formula => compile(formula, { x, y, globalRandom }));
                             switch (requiredSign) {
                                 case "=":
-                                    return result === requestedValue;
+                                    return requiredValue.some(value => result === value);
                                 case ">":
-                                    return result > requestedValue;
+                                    return requiredValue.some(value => result > value);
                                 case "<":
-                                    return result < requestedValue;
+                                    return requiredValue.some(value => result < value);
                                 case "!=":
-                                    return result !== requestedValue;
+                                    return requiredValue.some(value => result !== value);
                                 case ">=":
-                                    return result >= requestedValue;
+                                    return requiredValue.some(value => result >= value);
                                 case "<=":
-                                    return result <= requestedValue;
+                                    return requiredValue.some(value => result <= value);
                                 default:
-                                    return result === requestedValue;
+                                    return requiredValue.some(value => result === value);
                             }
                         } else {
                             return obj.value.some((formula) => {
@@ -153,22 +153,22 @@ class Life {
                                     [1, 0, 1],
                                     [1, 1, 1]
                                 ] : this.rules.kernels[selector]), globalRandom, (obj.boundary ?? this.rules.default?.boundary) ?? 'wrap');
-                                const requiredCount = compile(obj.count, { x, y, globalRandom });
+                                const requiredCount = obj.count.map(formula => compile(formula, { x, y, globalRandom }));
                                 switch (obj.sign ?? "=") {
                                     case "=":
-                                        return count === requiredCount;
+                                        return requiredCount.some(count2 => count === count2);
                                     case ">":
-                                        return count > requiredCount;
+                                        return requiredCount.some(count2 => count > count2);
                                     case "<":
-                                        return count < requiredCount;
+                                        return requiredCount.some(count2 => count < count2);
                                     case "!=":
-                                        return count !== requiredCount;
+                                        return requiredCount.some(count2 => count !== count2);
                                     case ">=":
-                                        return count >= requiredCount;
+                                        return requiredCount.some(count2 => count >= count2);
                                     case "<=":
-                                        return count <= requiredCount;
+                                        return requiredCount.some(count2 => count <= count2);
                                     default:
-                                        return count === requiredCount;
+                                        return requiredCount.some(count2 => count === count2);
                                 }
                             });
                         }
