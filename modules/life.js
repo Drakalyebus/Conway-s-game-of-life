@@ -63,7 +63,7 @@ class Life {
         this.x = x;
         this.y = y;
         this.rules = rules;
-        this.rules.behavior.sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0));
+        this.rules.behavior.sort((a, b) => (a.priority ?? 0) - (b.priority ?? 0));
         this.defined = [];
         const globalRandom = Math.random();
         const background = compile(this.rules.background ?? 0, { globalRandom });
