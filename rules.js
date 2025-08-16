@@ -26,7 +26,11 @@ export const rules = {
                 "boundary": "wrap"
             },
             "elseTo": 0,
-            "to": 1
+            "to": 1,
+            "stop": false,
+            "globalStop": false,
+            "elseStop": false,
+            "elseGlobalStop": false
         },
         {
             "priority": 0,
@@ -51,7 +55,11 @@ export const rules = {
                 ]
             },
             "elseTo": 1,
-            "to": 0
+            "to": 0,
+            "stop": false,
+            "globalStop": false,
+            "elseStop": false,
+            "elseGlobalStop": false
         }
     ]
 };

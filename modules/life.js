@@ -29,7 +29,11 @@ const defRules = {
                 "boundary": "wrap"
             },
             "elseTo": 0,
-            "to": 1
+            "to": 1,
+            "stop": false,
+            "globalStop": false,
+            "elseStop": false,
+            "elseGlobalStop": false
         },
         {
             "priority": 0,
@@ -54,7 +58,11 @@ const defRules = {
                 ]
             },
             "elseTo": 1,
-            "to": 0
+            "to": 0,
+            "stop": false,
+            "globalStop": false,
+            "elseStop": false,
+            "elseGlobalStop": false
         }
     ]
 };
@@ -104,7 +112,9 @@ class Life {
             });
         });
         orders.sort((a, b) => a - b);
-        orders.forEach((order) => {
+        for (let i = 0; i < orders.length; i++) {
+            const order = orders[i];
+            let stopped = false;
             const rules = this.rules.behavior.filter(rule => {
                 return (rule.order ?? [0])?.some(orderInRule => {
                     const calculatedOrder = compile(orderInRule, { globalRandom, ...(this.rules.variables ?? {}) });
@@ -181,15 +191,30 @@ class Life {
                     }
                     if (check && rule.from.some(type => compile(type, { x, y, globalRandom, ...(this.rules.variables ?? {}) }) === value)) {
                         clone.set(y, x, rule.to);
+                        if (rule.stop ?? false) {
+                            break;
+                        }
+                        if (rule.globalStop ?? false) {
+                            stopped = true;
+                            break;
+                        }
                     } else if (!check && rule.from.some(type => compile(type, { x, y, globalRandom, ...(this.rules.variables ?? {}) }) === value)) {
                         if (rule.elseTo !== undefined) {
                             clone.set(y, x, rule.elseTo);
+                        }
+                        if (rule.elseStop ?? false) {
+                            break;
+                        }
+                        if (rule.elseGlobalStop ?? false) {
+                            stopped = true;
+                            break;
                         }
                     }
                 }
             });
             this.field = clone;
-        });
+            if (stopped) break;
+        }
     }
     steps(steps = 1) {
         for (let i = 0; i < steps; i++) this.step();

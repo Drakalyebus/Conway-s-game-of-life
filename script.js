@@ -79,7 +79,7 @@ const draw = () => {
             life.field.set(gridClickPosition(e).y, gridClickPosition(e).x, types[selectedType]);
         }
     }
-    setTimeout(draw, 100);
+    setTimeout(draw, 0);
 }
 
 renderGrid(gridWidth, gridHeight, cellSize, cellSize);
