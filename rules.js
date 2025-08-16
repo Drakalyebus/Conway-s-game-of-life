@@ -1,6 +1,7 @@
 export const rules = {
     "types": [0, 1],
     "background": 0,
+    "variables": {},
     "kernels": {
         "moore": [
             [1, 1, 1],

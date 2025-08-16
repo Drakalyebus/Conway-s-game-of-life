@@ -4,6 +4,7 @@ import compile from "./mathcompiler.js";
 const defRules = {
     "types": [0, 1],
     "background": 0,
+    "variables": {},
     "kernels": {
         "moore": [
             [1, 1, 1],
@@ -66,7 +67,7 @@ class Life {
         this.rules.behavior.sort((a, b) => (a.priority ?? 0) - (b.priority ?? 0));
         this.defined = [];
         const globalRandom = Math.random();
-        const background = compile(this.rules.background ?? 0, { globalRandom });
+        const background = compile(this.rules.background ?? 0, { globalRandom, ...(this.rules.variables ?? {}) });
         this.field = new Matrix(this.y, this.x, background);
     }
     countNeighbors(x, y, value = 0, kernel = [
@@ -86,7 +87,7 @@ class Life {
             const nx = x + i;
             for (let j = skh; j < ekh; j++) {
                 const ny = y + j;
-                const calculated = compile(paddedKernel[j - skh][i - skw] ?? 0, { x: nx, y: ny, row: j - skh, column: i - skw, globalRandom });
+                const calculated = compile(paddedKernel[j - skh][i - skw] ?? 0, { x: nx, y: ny, row: j - skh, column: i - skw, globalRandom, ...(this.rules.variables ?? {}) });
                 if (this.field.get(ny, nx, boundary) === value) count += calculated;
             }
         }
@@ -98,7 +99,7 @@ class Life {
         const orders = [];
         this.rules.behavior.forEach(rule => {
             (rule.order ?? [0])?.forEach(order => {
-                const calculatedOrder = compile(order, { globalRandom });
+                const calculatedOrder = compile(order, { globalRandom, ...(this.rules.variables ?? {}) });
                 if (!orders.includes(calculatedOrder)) orders.push(calculatedOrder);
             });
         });
@@ -106,7 +107,7 @@ class Life {
         orders.forEach((order) => {
             const rules = this.rules.behavior.filter(rule => {
                 return (rule.order ?? [0])?.some(orderInRule => {
-                    const calculatedOrder = compile(orderInRule, { globalRandom });
+                    const calculatedOrder = compile(orderInRule, { globalRandom, ...(this.rules.variables ?? {}) });
                     return calculatedOrder === order;
                 });
             });
@@ -121,9 +122,9 @@ class Life {
                         } else if (obj.not !== undefined) {
                             return !checkTrue(obj.not)
                         } else if (obj.expression !== undefined) {
-                            const result = compile(obj.expression, { x, y, globalRandom });
+                            const result = compile(obj.expression, { x, y, globalRandom, ...(this.rules.variables ?? {}) });
                             const requiredSign = obj.sign ?? "=";
-                            const requiredValue = (obj.value ?? [1]).map(formula => compile(formula, { x, y, globalRandom }));
+                            const requiredValue = (obj.value ?? [1]).map(formula => compile(formula, { x, y, globalRandom, ...(this.rules.variables ?? {}) }));
                             switch (requiredSign) {
                                 case "=":
                                     return requiredValue.some(value => result === value);
@@ -142,7 +143,7 @@ class Life {
                             }
                         } else {
                             return obj.value.some((formula) => {
-                                const value = compile(formula, { x, y, globalRandom });
+                                const value = compile(formula, { x, y, globalRandom, ...(this.rules.variables ?? {}) });
                                 const selector = obj.kernel ?? this.rules.default?.kernel;
                                 const count = this.countNeighbors(x, y, value, this.rules.kernels === undefined ? [
                                     [1, 1, 1],
@@ -153,7 +154,7 @@ class Life {
                                     [1, 0, 1],
                                     [1, 1, 1]
                                 ] : this.rules.kernels[selector]), globalRandom, (obj.boundary ?? this.rules.default?.boundary) ?? 'wrap');
-                                const requiredCount = obj.count.map(formula => compile(formula, { x, y, globalRandom }));
+                                const requiredCount = obj.count.map(formula => compile(formula, { x, y, globalRandom, ...(this.rules.variables ?? {}) }));
                                 switch (obj.sign ?? "=") {
                                     case "=":
                                         return requiredCount.some(count2 => count === count2);
@@ -178,10 +179,10 @@ class Life {
                     if (!unset) {
                         check = checkTrue(rule.condition);
                     }
-                    if (check && rule.from.some(type => compile(type, { x, y, globalRandom }) === value)) {
+                    if (check && rule.from.some(type => compile(type, { x, y, globalRandom, ...(this.rules.variables ?? {}) }) === value)) {
                         clone.set(y, x, rule.to);
                         break;
-                    } else if (!check && rule.from.some(type => compile(type, { x, y, globalRandom }) === value)) {
+                    } else if (!check && rule.from.some(type => compile(type, { x, y, globalRandom, ...(this.rules.variables ?? {}) }) === value)) {
                         if (rule.elseTo !== undefined) {
                             clone.set(y, x, rule.elseTo);
                         }
@@ -211,7 +212,7 @@ class Life {
     }
     types() {
         const globalRandom = Math.random();
-        const types = [...(this.rules.types ?? []).map((type) => compile(type, { globalRandom }))];
+        const types = [...(this.rules.types ?? []).map((type) => compile(type, { globalRandom, ...(this.rules.variables ?? {}) }))];
         this.defined.forEach(type => {
             if (!types.includes(type)) {
                 types.push(type);
@@ -223,12 +224,12 @@ class Life {
         if (this.rules.behavior === undefined) return types;
         this.rules.behavior.forEach(rule => {
             rule.from.forEach(type => {
-                const calculated = compile(type, { x: 0, y: 0, globalRandom });
+                const calculated = compile(type, { x: 0, y: 0, globalRandom, ...(this.rules.variables ?? {}) });
                 if (!types.includes(calculated)) types.push(calculated);
             });
-            const calculatedTo = compile(rule.to, { x: 0, y: 0, globalRandom });
+            const calculatedTo = compile(rule.to, { x: 0, y: 0, globalRandom, ...(this.rules.variables ?? {}) });
             if (!types.includes(calculatedTo)) types.push(calculatedTo);
-            const calculatedElseTo = compile(rule.elseTo ?? rule.from[0], { x: 0, y: 0, globalRandom });
+            const calculatedElseTo = compile(rule.elseTo ?? rule.from[0], { x: 0, y: 0, globalRandom, ...(this.rules.variables ?? {}) });
             if (calculatedElseTo !== undefined && !types.includes(calculatedElseTo)) types.push(calculatedElseTo);
             const check = (obj) => {
                 if (obj.and !== undefined) {
@@ -239,7 +240,7 @@ class Life {
                     check(obj.not);
                 } else if (obj.expression === undefined) {
                     obj.value.forEach(type => {
-                        const calculated = compile(type, { x: 0, y: 0, globalRandom });
+                        const calculated = compile(type, { x: 0, y: 0, globalRandom, ...(this.rules.variables ?? {}) });
                         if (!types.includes(calculated)) types.push(calculated);
                     });
                 }
@@ -249,7 +250,7 @@ class Life {
             }
         });
         this.field.forEach((value, y, x) => {
-            const calculated = compile(value, { x, y, globalRandom });
+            const calculated = compile(value, { x, y, globalRandom, ...(this.rules.variables ?? {}) });
             if (!types.includes(calculated)) types.push(calculated);
         });
         types.sort((a, b) => a - b);
